@@ -1,0 +1,14 @@
+(library
+ (name compiler)
+ (preprocess (pps ppx_jane))
+ (libraries core ocamlgraph))
+
+(include_subdirs unqualified)
+
+(ocamllex lexer)
+
+(menhir
+ (modules parser)
+ (flags --explain --dump))
+
+
