@@ -185,7 +185,8 @@ module Avail = struct
 end
 
 module Reach = struct
-  type avail = Node.t -> (Node.t, Node.comparator_witness) dataflow
+  type reach = Node.t -> (Node.t, Node.comparator_witness) dataflow
+
 
   let def_sites flowgraph =
     let def_sites = Hashtbl.create (module String) in

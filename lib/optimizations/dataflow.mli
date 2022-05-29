@@ -1,4 +1,5 @@
 open Core
+open Instruction
 module Ir := Ir.Simple
 open Ir
 
@@ -48,11 +49,25 @@ module Reach : sig
   val analysis : Ir.t -> reach
 end
 
+module Copy_reach : sig
+  module Copy : sig
+    type t =
+      { lhs : variable
+      ; rhs : variable
+      }
+    [@@deriving compare, sexp, hash]
+
+    include Comparable.S with type t := t
+  end
+
+  type copy_reach = Node.t -> (Copy.t, Copy.comparator_witness) dataflow
+end
+
 module Transform : sig
   type t = Ir.t -> Ir.t
 
   val dead_code_elim : t
   val common_subexpr_elim : t
-  val copy_prop : t 
+  val copy_prop : t
   val const_prop : t
 end
