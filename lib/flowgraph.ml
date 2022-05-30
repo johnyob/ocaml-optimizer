@@ -94,7 +94,7 @@ module Make (Node : Node) = struct
         let get_subgraph _ = None
         let vertex_attributes node = [ `Label (label node) ]
         let vertex_name node = Int.to_string (Node.hash node)
-        let default_vertex_attributes _ = []
+        let default_vertex_attributes _ = [ `Shape `Box ]
         let graph_attributes _ = []
       end)
     in
