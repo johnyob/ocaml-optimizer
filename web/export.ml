@@ -4,13 +4,17 @@ open Compiler
 open Compiler.Instruction
 
 let rec stringify_expr expr =
+  let open Expr in
   match expr with
   | Var x -> x
   | Int x -> string_of_int x
   | Plus (expr1, expr2) -> [%string "(%{stringify_expr expr1} + %{stringify_expr expr2})"]
+  | Sub (expr1, expr2) -> [%string "(%{stringify_expr expr1} - %{stringify_expr expr2})"]
+  | Mul (expr1, expr2) -> [%string "(%{stringify_expr expr1} * %{stringify_expr expr2})"]
 ;;
 
 let stringify_cond cond =
+  let open Condition in
   match cond with
   | Equal (expr1, expr2) -> [%string "%{stringify_expr expr1} = %{stringify_expr expr2}"]
   | Greater_than (expr1, expr2) ->
@@ -75,7 +79,7 @@ let ssa_to_dot ssa =
       ssa)
 ;;
 
-let _ =
+let () =
   Js.export
     "optimizer"
     (object%js
@@ -87,7 +91,7 @@ let _ =
        method simpleAvailFromString str =
          let program = parse_program_from_string (Js.to_string str) in
          let ir = Ir.Simple.of_program program in
-         let avail = Dataflow.Avail.analysis ir in
+         let avail = Analysis.Avail.analysis ir in
          let dot =
            Ir.Simple.to_dot
              ~label:(fun block ->
@@ -103,7 +107,7 @@ let _ =
        method simpleLiveFromString str =
          let program = parse_program_from_string (Js.to_string str) in
          let ir = Ir.Simple.of_program program in
-         let live = Dataflow.Liveness.analysis ir in
+         let live = Analysis.Liveness.analysis ir in
          let dot =
            Ir.Simple.to_dot
              ~label:(fun block ->
