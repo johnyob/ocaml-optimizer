@@ -8,6 +8,8 @@
 %token ASSIGN
 %token ADDRESS_OF
 %token PLUS
+%token SUB
+%token MUL
 %token GREATER_THAN
 %token EQUAL
 %token LESS_THAN
@@ -26,8 +28,13 @@
 %token LEFT_BRACKET
 %token RIGHT_BRACKET
 
+%left PLUS SUB
+%left MUL
+
 %{
 open Instruction
+open Expr
+open Condition
 %}
 
 %start parse_program
@@ -127,9 +134,9 @@ expression:
   | n = INT
       { Int n }
   | expr1 = expression
-    ; PLUS
+    ; op = expr_op
     ; expr2 = expression
-      { Plus (expr1, expr2) }
+      { op expr1 expr2 }
   | LEFT_PAREN
     ; expr = expression
     ; RIGHT_PAREN
@@ -140,6 +147,11 @@ condition:
     ; op = condition_op
     ; expr2 = expression
       { op expr1 expr2 }
+
+%inline expr_op:
+  | MUL           { fun expr1 expr2 -> Mul (expr1, expr2) }
+  | PLUS          { fun expr1 expr2 -> Plus (expr1, expr2) }
+  | SUB           { fun expr1 expr2 -> Sub (expr1, expr2) }
 
 %inline condition_op:
   | EQUAL         { fun expr1 expr2 -> Equal (expr1, expr2) }

@@ -19,6 +19,18 @@ module type S = sig
     }
 
   val to_dot : t -> label:(Node.t -> string) -> string
+
+  module Transform : sig
+    val map : t -> f:(Node.t -> Node.t) -> t
+
+    (** Warning: cannot map entry to None! *)
+    val filter_map : t -> f:(Node.t -> Node.t option) -> t
+
+    (** Warning: cannot map to empty list! *)
+    val map_many : t -> f:(Node.t -> Node.t list) -> t
+
+    val mapf : t -> f:(Flowgraph.t -> Node.t -> Node.t) -> t
+  end
 end
 
 module Make (Node : Node) : S with module Node := Node = struct
@@ -31,19 +43,57 @@ module Make (Node : Node) : S with module Node := Node = struct
     }
 
   let to_dot t ~label = Flowgraph.to_dot t.flowgraph ~label
+
+  module Transform = struct
+    let map { flowgraph; entry } ~f =
+      let new_entry = f entry in
+      let f node = if Node.compare node entry = 0 then new_entry else f node in
+      { flowgraph = Flowgraph.map flowgraph ~f; entry = new_entry }
+    ;;
+
+    let filter_map { flowgraph; entry } ~f =
+      let new_entry =
+        Option.value_exn
+          (f entry)
+          ~here:[%here]
+          ~error:(Error.create_s [%message "Cannot map entry to None" (entry : Node.t)])
+      in
+      let f node = if Node.compare node entry = 0 then Some new_entry else f node in
+      { flowgraph = Flowgraph.filter_map flowgraph ~f; entry }
+    ;;
+
+    let map_many { flowgraph; entry } ~f =
+      let new_entry = f entry in
+      let f node = if Node.compare node entry = 0 then new_entry else f node in
+      { flowgraph = Flowgraph.map_many flowgraph ~f; entry = List.hd_exn new_entry }
+    ;;
+
+    let mapf { flowgraph; entry } ~f =
+      let new_entry = f flowgraph entry in
+      let f flowgraph node =
+        if Node.compare node entry = 0 then new_entry else f flowgraph node
+      in
+      { flowgraph = Flowgraph.mapf flowgraph ~f; entry = new_entry }
+    ;;
+  end
 end
 
 module Simple = struct
   module Node = struct
-    type t =
-      { id : int
-      ; instr : instruction
-      }
-    [@@deriving sexp]
+    module T = struct
+      type t =
+        { id : int
+        ; instr : instruction
+        }
+      [@@deriving sexp]
 
-    let compare t1 t2 = Int.compare t1.id t2.id
-    let hash t = Int.hash t.id
-    let hash_fold_t state t = Int.hash_fold_t state t.id
+      let compare t1 t2 = Int.compare t1.id t2.id
+      let hash t = Int.hash t.id
+      let hash_fold_t state t = Int.hash_fold_t state t.id
+    end
+
+    include T
+    include Comparable.Make (T)
   end
 
   include Make (Node)
@@ -125,7 +175,7 @@ module Basic_block = struct
     end
 
     include T
-    include Comparator.Make (T)
+    include Comparable.Make (T)
 
     let of_leader leader =
       { id = fresh_id ()
@@ -228,17 +278,17 @@ module Ssa = struct
       let table = Hashtbl.create (module Node) in
       fun node ->
         Hashtbl.find_or_add table node ~default:(fun () ->
-            node.block |> List.map ~f:def |> String.Set.union_list)
+            node.block |> List.map ~f:def |> Var.Set.union_list)
     in
     (* Initialization of def_sites *)
-    let def_sites = Hashtbl.create (module String) in
+    let def_sites = Hashtbl.create (module Var) in
     Flowgraph.iter flowgraph ~f:(fun node ->
         Set.iter (def_node node) ~f:(fun var ->
             Hashtbl.update def_sites var ~f:(function
                 | None -> Set.singleton (module Node) node
                 | Some nodes -> Set.add nodes node)));
     (* Main loop for loop *)
-    let phis = Hashtbl.create (module String) in
+    let phis = Hashtbl.create (module Var) in
     let find_phis a =
       Hashtbl.find_or_add phis a ~default:(fun () -> Set.empty (module Node))
     in
@@ -296,13 +346,15 @@ module Ssa = struct
     in
     (* Compute all variables (used for initialization) *)
     let all_vars =
-      Flowgraph.fold flowgraph ~init:String.Set.empty ~f:(fun node all_vars ->
-          let vars = List.map node.block ~f:free_vars_instr |> String.Set.union_list in
-          Set.union vars all_vars)
+      Flowgraph.fold flowgraph ~init:Var.Set.empty ~f:(fun node all_vars ->
+          let vars =
+            List.map node.block ~f:Instruction.free_vars_all |> Var.Set.union_list
+          in
+          Var.Set.union vars all_vars)
     in
     (* Initialization *)
-    let counts = Hashtbl.create (module String)
-    and stacks = Hashtbl.create (module String) in
+    let counts = Hashtbl.create (module Var)
+    and stacks = Hashtbl.create (module Var) in
     Set.iter all_vars ~f:(fun var ->
         Hashtbl.set counts ~key:var ~data:0;
         Hashtbl.set stacks ~key:var ~data:(Stack.singleton 0));
@@ -339,8 +391,8 @@ module Ssa = struct
       (* Update block *)
       node.block
         <- List.map node.block ~f:(fun instr ->
-               let instr = subst_instr_ref instr ~subst:subst_var_ref in
-               subst_instr_def instr ~subst:subst_var_def);
+               let instr = Instruction.subst_ref_var instr ~subst:subst_var_ref in
+               Instruction.subst_def_var instr ~subst:subst_var_def);
       (* Update phi (refs only) *)
       List.iter (Flowgraph.succ flowgraph node) ~f:(fun succ ->
           let preds = Flowgraph.pred flowgraph succ in
@@ -368,4 +420,7 @@ module Ssa = struct
     rename ir ~dom_tree:all.dom_tree;
     ir
   ;;
+
+  let of_simple simple = simple |> Basic_block.of_simple |> of_basic_block
+  let of_program program = program |> Simple.of_program |> of_simple
 end

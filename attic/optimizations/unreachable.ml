@@ -1,4 +1,4 @@
-open Core
+(* open Core
 module Ir = Ir.Simple
 
 
@@ -31,4 +31,4 @@ let eliminate =
       List.fold_left unreachable_nodes ~init:ir.flowgraph ~f:Flowgraph.remove_node
     in
     { ir with flowgraph }
-;;
+;; *)

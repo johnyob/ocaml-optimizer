@@ -14,6 +14,18 @@ module type S = sig
     }
 
   val to_dot : t -> label:(Node.t -> string) -> string
+
+  module Transform : sig
+    val map : t -> f:(Node.t -> Node.t) -> t
+
+    (** Warning: cannot map entry to None! *)
+    val filter_map : t -> f:(Node.t -> Node.t option) -> t
+
+    (** Warning: cannot map to empty list! *)
+    val map_many : t -> f:(Node.t -> Node.t list) -> t
+
+    val mapf : t -> f:(Flowgraph.t -> Node.t -> Node.t) -> t
+  end
 end
 
 module Simple : sig
@@ -23,6 +35,8 @@ module Simple : sig
       ; instr : instruction
       }
     [@@deriving sexp, hash, compare]
+
+    include Node with type t := t
   end
 
   include S with module Node := Node
@@ -37,6 +51,8 @@ module Basic_block : sig
       ; block : instruction list
       }
     [@@deriving sexp, hash, compare]
+
+    include Node with type t := t
   end
 
   include S with module Node := Node
@@ -53,12 +69,13 @@ module Ssa : sig
       ; mutable block : instruction list
       }
     [@@deriving sexp, hash, compare]
+
+    include Node with type t := t
   end
 
   include S with module Node := Node
-  (* include Invariant.S with type t := t *)
-(* 
+
   val of_program : program -> t
-  val of_simple : Simple.t -> t *)
+  val of_simple : Simple.t -> t
   val of_basic_block : Basic_block.t -> t
 end

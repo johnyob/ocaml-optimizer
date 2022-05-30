@@ -1,3 +1,5 @@
+open Core
+
 module type S = sig
   type node
 
@@ -52,12 +54,33 @@ module type S = sig
   (** [to_dot t ~label] returns dot encoding of [t] *)
   val to_dot : t -> label:(node -> string) -> string
 
+  (** [map t ~f] applies [f] to every node in [t]. *)
+  val map : t -> f:(node -> node) -> t
+
+  (** [filter_map t ~f] applies [f] to every node, removing nodes accordingly.contents    
+      Removing a node preserves control flow by connecting predecessors and successors.
+  *)
+  val filter_map : t -> f:(node -> node option) -> t
+
+  (** [map_many t ~f] applies [f] to every node, inserting the corresponding block of nodes *)
+  val map_many : t -> f:(node -> node list) -> t
+
+  val mapf : t -> f:(t -> node -> node) -> t
+
+  val update : t -> from:node -> to_:node -> t
+
+  val update_many : t -> from:node -> to_:node list -> t
+
+  val remove_and_preserve_connectivity : t -> node -> t
+
   module To_ocamlgraph :
     Graph.Sig.P with type t = t and type V.t = node and type E.t = node * node
 end
 
 module type Node = sig
   type t [@@deriving sexp, compare, hash]
+
+  include Comparable.S with type t := t
 end
 
 module type Intf = sig
