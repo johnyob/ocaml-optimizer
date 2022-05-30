@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Instruction
 open Ir
 module Ir = Ir.Simple
@@ -642,4 +642,4 @@ module Transform = struct
         in
         { flowgraph; entry })
   ;;
-end
+end *)

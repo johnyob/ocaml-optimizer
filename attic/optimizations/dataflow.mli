@@ -1,4 +1,4 @@
-open Core
+(* open Core
 open Instruction
 module Ir := Ir.Simple
 open Ir
@@ -70,4 +70,4 @@ module Transform : sig
   val common_subexpr_elim : t
   val copy_prop : t
   val const_prop : t
-end
+end *)

@@ -28,6 +28,8 @@ rule read =
   | ":="          { ASSIGN }
   | "&"           { ADDRESS_OF }
   | "+"           { PLUS }
+  | "-"           { SUB }
+  | "*"           { MUL }
   | ">"           { GREATER_THAN }
   | "="           { EQUAL }
   | "<"           { LESS_THAN }
