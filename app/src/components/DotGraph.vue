@@ -1,6 +1,6 @@
 <template>
   <div class="dot-graph-root">
-    <div class="dot-graph" v-html="graph" />
+    <div class="dot-graph" v-html="graph" :style="transformStyles" />
   </div>
 </template>
 
@@ -16,7 +16,40 @@ export default {
     },
   },
   data() {
-    return { graph: "" };
+    return { graph: "", translateX: 0, translateY: 0, scale: 1 };
+  },
+  mounted() {
+    this.$el.addEventListener("mousemove", this.onMouseMove);
+    this.$el.addEventListener("wheel", this.onWheel);
+    window.addEventListener("keydown", this.onKeyDown);
+  },
+  beforeDestroy() {
+    this.$el.removeEventListener("mousemove", this.onMouseMove);
+    this.$el.removeEventListener("wheel", this.onWheel);
+    window.removeEventListener("keydown", this.onKeyDown);
+  },
+  computed: {
+    transformStyles() {
+      const transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+      return { transform };
+    },
+  },
+  methods: {
+    onMouseMove(e) {
+      if (e.buttons !== 1) return;
+      this.translateX += e.movementX;
+      this.translateY += e.movementY;
+    },
+    onWheel(e) {
+      this.scale = Math.max(1, Math.min(20, this.scale - e.deltaY * 0.01));
+    },
+    onKeyDown(e) {
+      if (e.ctrlKey && e.key === "r") {
+        this.translateX = 0;
+        this.translateY = 0;
+        this.scale = 1;
+      }
+    },
   },
   watch: {
     value: {
@@ -34,6 +67,7 @@ export default {
   width: 100%;
   height: 100%;
   position: relative;
+  overflow: hidden;
 }
 .dot-graph {
   position: absolute;
