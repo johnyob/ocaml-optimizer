@@ -144,7 +144,7 @@ module Simple = struct
       Map.fold nodes ~init:flowgraph ~f:(fun ~key:_ ~data:node flowgraph ->
           match node.instr with
           (* Statically known control flow *)
-          | `Cond (_, label) | `Call (label, _) | `Jump label ->
+          | `Cond (_, label) | `Jump label ->
             let target_node = find_label label in
             Flowgraph.add_edge flowgraph ~src:node ~dst:target_node
           (* Indirect jumps, not statically known. Approximate using [addressed_labels] *)
