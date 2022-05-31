@@ -4,6 +4,7 @@ const GRAPHS = {
   Simple: "simpleFromString",
   "Simple (AVAIL)": "simpleAvailFromString",
   "Simple (LIVE)": "simpleLiveFromString",
+  "Simple (OPT)": "simpleOptimizedFromString",
   Basic: "basicBlockFromString",
   SSA: "ssaFromString",
 };

@@ -32,7 +32,7 @@ let unreachable_elim =
       let flowgraph =
         if not (List.is_empty unreachable_nodes) then continue ();
         List.fold_left unreachable_nodes ~init:ir.flowgraph ~f:(fun flowgraph node ->
-            print_endline [%string "Removing unreachable node %{node.id#Int}"];
+            print_endline [%string "Removing unreachable node %{Instruction.to_string node.instr} (%{node.id#Int})"];
             Flowgraph.remove_node flowgraph node)
       in
       { ir with flowgraph })
@@ -52,7 +52,7 @@ let dead_code_elim =
           then Some node
           else if is_dead node
           then (
-            print_endline [%string "Remove dead instruction %{node.Node.id#Int}"];
+            print_endline [%string "Remove dead instruction %{Instruction.to_string node.instr} (%{node.id#Int})"];
             continue ();
             None)
           else Some node))
@@ -148,9 +148,7 @@ let common_subexpr_elim =
               List.fold_left sub_exprs ~init:flowgraph ~f:(fun flowgraph expr ->
                   continue ();
                   print_endline
-                    [%string
-                      "Eliminating common subexpression %{Expr.sexp_of_t expr |> \
-                       Sexp.to_string_hum}"];
+                    [%string "Eliminating common subexpression %{Expr.to_string expr} (%{node.id#Int})"];
                   (* Find reaching exprs of [expr] *)
                   let reaching_exprs = reaching_exprs flowgraph node ~expr in
                   (* Generate new variable *)
@@ -233,7 +231,8 @@ let const_prop =
             match Map.find const_reach var with
             | Some n ->
               continue ();
-              print_endline [%string "Constant propgation: propagating %{var} := %{n#Int}"];
+              print_endline
+                [%string "Constant propgation: propagating %{var} := %{n#Int}"];
               Expr.Int n
             | None -> Expr.Var var
           in
@@ -243,7 +242,7 @@ let const_prop =
 let peephole_data ir ~continue:_ =
   Transform.filter_map ir ~f:(fun node ->
       match node.instr with
-      | `Assign (x, Var y) when Var.(x = y) -> 
+      | `Assign (x, Var y) when Var.(x = y) ->
         print_endline [%string "Elimating instruction %{x} := %{x} (%{node.id#Int})"];
         None
       | `Assign (x, expr) -> Some { node with instr = `Assign (x, Expr.simplify expr) }

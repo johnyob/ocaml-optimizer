@@ -38,6 +38,8 @@ module Expr : sig
   val is_const : t -> bool
   val eval_const_expr : t -> int
   val simplify : t -> t
+
+  val to_string : t -> string
 end
 
 (** Jump conditions *)
@@ -57,6 +59,8 @@ module Condition : sig
   val subst_expr : t -> subst:(Var.t -> Expr.t) -> t
   val is_const : t -> bool
   val eval_const_cond : t -> bool
+
+  val to_string : t -> string
 end
 
 type label = Label.t [@@deriving sexp]
@@ -107,3 +111,5 @@ val subst_ref_var : instruction -> subst:(variable -> variable) -> instruction
 val subst_def_var : instruction -> subst:(variable -> variable) -> instruction
 val subst_expr : instruction -> subst:(variable -> expression) -> instruction
 val is_const_assign : instruction -> (variable * int) option
+
+val to_string : instruction -> string

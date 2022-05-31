@@ -122,6 +122,15 @@ module Expr = struct
       | Int n, (Mul (expr, Int m) | Mul (Int m, expr)) -> Sub (expr, Int (m * n))
       | expr1, expr2 -> Mul (expr1, expr2))
   ;;
+
+  let rec to_string expr =
+    match expr with
+    | Var x -> x
+    | Int x -> string_of_int x
+    | Plus (expr1, expr2) -> [%string "(%{to_string expr1} + %{to_string expr2})"]
+    | Sub (expr1, expr2) -> [%string "(%{to_string expr1} - %{to_string expr2})"]
+    | Mul (expr1, expr2) -> [%string "(%{to_string expr1} * %{to_string expr2})"]
+  ;;
 end
 
 module Condition = struct
@@ -196,6 +205,18 @@ module Condition = struct
         Expr.eval_const_expr expr1 > Expr.eval_const_expr expr2
       | Less_than (expr1, expr2) ->
         Expr.eval_const_expr expr1 < Expr.eval_const_expr expr2)
+  ;;
+
+  let to_string cond =
+    match cond with
+    | Equal (expr1, expr2) ->
+      [%string "%{Expr.to_string expr1} = %{Expr.to_string expr2}"]
+    | Greater_than (expr1, expr2) ->
+      [%string "%{Expr.to_string expr1} > %{Expr.to_string expr2}"]
+    | Less_than (expr1, expr2) ->
+      [%string "%{Expr.to_string expr1} < %{Expr.to_string expr2}"]
+    | Not_equal (expr1, expr2) ->
+      [%string "%{Expr.to_string expr1} != %{Expr.to_string expr2}"]
   ;;
 end
 
@@ -347,4 +368,26 @@ let is_const_assign instr =
   match instr with
   | `Assign (x, expr) when Expr.is_const expr -> Some (x, Expr.eval_const_expr expr)
   | _ -> None
+;;
+
+let to_string instr =
+  match instr with
+  | `Call (lab, exprs) ->
+    let exprs = String.concat ~sep:", " (List.map exprs ~f:Expr.to_string) in
+    [%string "%{lab}(%{exprs});"]
+  | `Calli (x, exprs) ->
+    let exprs = String.concat ~sep:", " (List.map exprs ~f:Expr.to_string) in
+    [%string "[%{x}](%{exprs});"]
+  | `Jump lab -> [%string "goto %{lab};"]
+  | `Jump_indir x -> [%string "goto [%{x}];"]
+  | `Cond (cond, lab) -> [%string "if %{Condition.to_string cond} goto %{lab};"]
+  | `Ret -> "ret;"
+  | `Assign (x, expr) -> [%string "%{x} := %{Expr.to_string expr};"]
+  | `Address_of (x, rhs) ->
+    (match rhs with
+    | `Label lab -> [%string "%{x} := &%{lab};"]
+    | `Var x -> [%string "%{x} := &{x};"])
+  | `Deref (x, expr) -> [%string "%{x} := [%{Expr.to_string expr}];"]
+  | `Store (expr, x) -> [%string "[%{x}] := %{Expr.to_string expr};"]
+  | `Label lab -> [%string "%{lab}:"]
 ;;
