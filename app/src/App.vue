@@ -51,12 +51,20 @@ export default {
       error: "",
     };
   },
+  computed: {
+    debounceTimeout() {
+      return this.graphKey === "Simple (OPT)" ? 1000 : 250;
+    },
+  },
   async mounted() {
     const code = (await get(IDB_KEY)) ?? defaultProgram;
     this.code = code;
     this.$watch("code", (newCode) => {
       clearTimeout(this.debounceHandle);
-      this.debounceHandle = setTimeout(() => this.renderCode(newCode), 250);
+      this.debounceHandle = setTimeout(
+        () => this.renderCode(newCode),
+        this.debounceTimeout
+      );
     });
     await this.renderCode(code);
   },
