@@ -59,6 +59,15 @@ module Basic_block : sig
 
   val of_program : program -> t
   val of_simple : Simple.t -> t
+
+  module Dom : sig
+    type ir := t
+    type t
+
+    val to_dot : t -> string
+
+    val dom_graph : ir -> t
+  end
 end
 
 module Ssa : sig

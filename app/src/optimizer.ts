@@ -6,6 +6,7 @@ const GRAPHS = {
   "Simple (LIVE)": "simpleLiveFromString",
   "Simple (OPT)": "simpleOptimizedFromString",
   "Simple (REACH)": "simpleReachFromString",
+  "Dom Graph": "domGraphFromString",
   Basic: "basicBlockFromString",
   SSA: "ssaFromString",
 };

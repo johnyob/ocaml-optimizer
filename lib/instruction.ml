@@ -386,7 +386,7 @@ let to_string instr =
   | `Address_of (x, rhs) ->
     (match rhs with
     | `Label lab -> [%string "%{x} := &%{lab};"]
-    | `Var x -> [%string "%{x} := &{x};"])
+    | `Var x -> [%string "%{x} := &%{x};"])
   | `Deref (x, expr) -> [%string "%{x} := [%{Expr.to_string expr}];"]
   | `Store (expr, x) -> [%string "[%{x}] := %{Expr.to_string expr};"]
   | `Label lab -> [%string "%{lab}:"]

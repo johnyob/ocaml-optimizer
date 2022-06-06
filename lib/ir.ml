@@ -222,6 +222,46 @@ module Basic_block = struct
   ;;
 
   let of_program program = Simple.of_program program |> of_simple
+
+  module Dom = struct
+    type t = Flowgraph.t
+
+    module Dominator = Graph.Dominator.Make_graph (struct
+      include Flowgraph.To_ocamlgraph
+
+      let empty () = empty
+    end)
+
+    let to_dot flowgraph =
+      let stringify_block (node : Node.t) =
+        String.concat
+          ~sep:"\n"
+          ([%string "NODE_ID = %{node.id#Int}"] :: List.map node.block ~f:Instruction.to_string)
+      in
+      Flowgraph.to_dot flowgraph ~label:(fun node -> stringify_block node)
+    ;;
+
+    let dom_graph ir =
+      let all = Dominator.compute_all ir.flowgraph ir.entry in
+      (* print dominators in console *)
+      print_endline "Dominators:";
+      let doms = all.dominators in
+      Flowgraph.iter ir.flowgraph ~f:(fun node ->
+          let doms = doms node |> List.map ~f:(fun node -> node.id) in
+          [%sexp Node, (node.id : int), Dominators, (doms : int list)]
+          |> Sexp.to_string_hum
+          |> print_endline);
+      (* print dominance frontier in console *)
+      print_endline "Dominance Frontier";
+      let dom_front = all.dom_frontier in
+      Flowgraph.iter ir.flowgraph ~f:(fun node ->
+          let doms = dom_front node |> List.map ~f:(fun node -> node.id) in
+          [%sexp Node, (node.id : int), Frontier, (doms : int list)]
+          |> Sexp.to_string_hum
+          |> print_endline);
+      all.dom_graph ()
+    ;;
+  end
 end
 
 module Ssa = struct

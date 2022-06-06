@@ -107,6 +107,12 @@ let () =
          in
          Js.string dot
 
+       method domGraphFromString str =
+         let program = parse_program_from_string (Js.to_string str) in
+         let ir = Ir.Basic_block.of_program program in
+         let dom_graph = Ir.Basic_block.Dom.dom_graph ir in
+         Js.string (Ir.Basic_block.Dom.to_dot dom_graph)
+
        method basicBlockFromString str =
          let program = parse_program_from_string (Js.to_string str) in
          let ir = Ir.Basic_block.of_program program in

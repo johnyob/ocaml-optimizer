@@ -6,6 +6,7 @@ declare global {
     simpleLiveFromString(code: string): string;
     simpleReachFromString(code: string): string;
     basicBlockFromString(code: string): string;
+    domGraphFromString(code: string): string;
     ssaFromString(code: string): string;
   };
 }
