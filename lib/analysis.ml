@@ -174,7 +174,13 @@ module Reach = struct
             Hashtbl.update def_sites var ~f:(function
                 | None -> Set.singleton node
                 | Some nodes -> Set.add nodes node)));
-    def_sites |> Var.Map.of_hashtbl_exn
+    let result = def_sites |> Var.Map.of_hashtbl_exn in
+    Map.iteri result ~f:(fun ~key ~data ->
+        let nodes = Node.Set.to_list data |> List.map ~f:(fun node -> node.Node.id) in
+        [%sexp Key, (key : Var.t), Nodes, (nodes : int list)]
+        |> Sexp.to_string_hum
+        |> print_endline);
+    result
   ;;
 
   let kill (node : Node.t) ~def_sites =
@@ -187,7 +193,11 @@ module Reach = struct
     Set.remove defs node
   ;;
 
-  let gen node = Node.Set.singleton node
+  let gen (node : Node.t) =
+    if Var.Set.is_empty (Instruction.def node.instr)
+    then Node.Set.empty
+    else Node.Set.singleton node
+  ;;
 
   let analysis ({ flowgraph; _ } as ir) =
     let def_sites = def_sites flowgraph in
@@ -196,11 +206,11 @@ module Reach = struct
       ~init:(fun _ -> { in_ = Node.Set.empty; out = Node.Set.empty })
       ~f:(fun node reach ->
         let out_reach (node : Node.t) =
-          Set.diff (reach node).in_ (kill ~def_sites node) |> Set.union (gen node)
+          Set.union (gen node) (Set.diff (reach node).in_ (kill ~def_sites node))
         in
         let in_reach (node : Node.t) =
           Flowgraph.pred flowgraph node
-          |> List.map ~f:(fun node -> (reach node).out)
+          |> List.map ~f:(fun node -> out_reach node)
           |> Node.Set.union_list
         in
         { in_ = in_reach node; out = out_reach node })

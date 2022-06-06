@@ -84,6 +84,29 @@ let () =
          in
          Js.string dot
 
+       method simpleReachFromString str =
+         let program = parse_program_from_string (Js.to_string str) in
+         let ir = Ir.Simple.of_program program in
+         let reach = Analysis.Reach.analysis ir in
+         let dot =
+           Ir.Simple.to_dot
+             ~label:(fun block ->
+               let instr = Instruction.to_string block.instr in
+               let id node = node.Ir.Simple.Node.id in
+               let reach_node = reach block in
+               let in_ =
+                 stringify_set reach_node.in_ ~f:(fun x -> id x |> Int.to_string)
+               in
+               let out =
+                 stringify_set reach_node.out ~f:(fun x -> id x |> Int.to_string)
+               in
+               let node_id = id block in
+               [%string
+                 "REACH_IN = %{in_}\n%{node_id#Int} | %{instr}\nREACH_OUT = %{out}"])
+             ir
+         in
+         Js.string dot
+
        method basicBlockFromString str =
          let program = parse_program_from_string (Js.to_string str) in
          let ir = Ir.Basic_block.of_program program in
